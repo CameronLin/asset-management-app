@@ -7,7 +7,11 @@ import {
   calculateHoldingProfitLoss,
   calculateHoldingReturnRate,
 } from "@/lib/calculations";
-import { fetchTaiwanStockLatestPrice } from "@/lib/marketData";
+import {
+  fetchTaiwanStockLatestPrice,
+  MarketDataError,
+  normalizeTaiwanStockSymbol,
+} from "@/lib/marketData";
 import { getTaiwanStockColor } from "@/lib/stockColor";
 import { getHoldings, saveHoldings } from "@/lib/storage";
 import type { Holding } from "@/lib/types";
@@ -64,16 +68,46 @@ function HoldingsPage() {
     }
   }, []);
 
-  const handleSave = (holding: Holding) => {
+  const handleSave = async (holding: Holding) => {
     try {
+      let nextHolding = holding;
+      let nextActionError: string | null = null;
+
+      if (!editing) {
+        try {
+          const latest = await fetchTaiwanStockLatestPrice(holding.symbol);
+          nextHolding = {
+            ...holding,
+            price: latest.close,
+            prevClose: latest.close,
+            latestPriceDate: latest.date,
+            dataSource: "FinMind",
+            priceStatus: "live",
+          };
+        } catch (error) {
+          if (error instanceof MarketDataError && error.code === "NOT_FOUND") {
+            nextActionError = `查無股票代號 ${holding.symbol} 的行情資料，已先以手動價格建立持股，狀態為尚未取得即時股價。`;
+          } else {
+            nextActionError = `尚未取得 ${holding.symbol} 的即時股價，已先使用手動輸入價格。`;
+          }
+
+          nextHolding = {
+            ...holding,
+            latestPriceDate: null,
+            dataSource: "Manual",
+            priceStatus: "manual",
+          };
+        }
+      }
+
       setHoldings((prev) => {
         const next = editing
-          ? prev.map((item) => (item.symbol === editing.symbol ? holding : item))
-          : [...prev, holding];
+          ? prev.map((item) => (item.symbol === editing.symbol ? nextHolding : item))
+          : [...prev, nextHolding];
         saveHoldings(next);
         return next;
       });
-      setActionError(null);
+      setActionError(nextActionError);
       setShowForm(false);
       setEditing(null);
     } catch {
@@ -122,6 +156,9 @@ function HoldingsPage() {
           ...holding,
           prevClose: holding.price,
           price: result.value.nextPrice,
+          latestPriceDate: result.value.date,
+          dataSource: "FinMind",
+          priceStatus: "live",
         };
       });
 
@@ -230,12 +267,20 @@ function HoldingsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{holding.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{holding.sector}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {holding.latestPriceDate
+                        ? `價格日期 ${holding.latestPriceDate}`
+                        : "尚未取得即時股價"}
+                    </p>
                   </div>
                 </Link>
                 <div className="ml-3 flex items-start gap-2">
                   <div className="text-right">
                     <p className="font-mono text-base font-bold tabular">
                       {holding.price.toFixed(2)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {holding.dataSource ?? "Manual"}
                     </p>
                     <p className={`font-mono text-xs tabular ${stockColor.textClass}`}>
                       {formatPct(holding.returnRate)}
@@ -313,9 +358,10 @@ function HoldingForm({
   initial: Holding | null;
   existingSymbols: string[];
   onCancel: () => void;
-  onSave: (holding: Holding) => void;
+  onSave: (holding: Holding) => Promise<void>;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     stockSymbol: initial?.symbol ?? "",
     stockName: initial?.name ?? "",
@@ -333,8 +379,8 @@ function HoldingForm({
   const returnRate = costBasis === 0 ? 0 : (profitLoss / costBasis) * 100;
   const stockColor = getTaiwanStockColor(profitLoss);
 
-  const handleSubmit = () => {
-    const stockSymbol = form.stockSymbol.trim().toUpperCase();
+  const handleSubmit = async () => {
+    const stockSymbol = normalizeTaiwanStockSymbol(form.stockSymbol);
     const stockName = form.stockName.trim();
 
     if (!stockSymbol) {
@@ -373,15 +419,24 @@ function HoldingForm({
     }
 
     setError(null);
-    onSave({
-      symbol: stockSymbol,
-      name: stockName,
-      shares,
-      avgCost,
-      price: currentPrice,
-      prevClose: initial?.prevClose ?? currentPrice,
-      sector: initial?.sector ?? "未分類",
-    });
+    setIsSubmitting(true);
+
+    try {
+      await onSave({
+        symbol: stockSymbol,
+        name: stockName,
+        shares,
+        avgCost,
+        price: currentPrice,
+        prevClose: initial?.prevClose ?? currentPrice,
+        sector: initial?.sector ?? "未分類",
+        latestPriceDate: initial?.latestPriceDate ?? null,
+        dataSource: initial?.dataSource ?? "Manual",
+        priceStatus: initial?.priceStatus ?? "manual",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -458,6 +513,11 @@ function HoldingForm({
               className="w-full rounded-xl bg-background px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary"
             />
           </Field>
+          {!initial && (
+            <p className="text-[11px] text-muted-foreground">
+              儲存後會先嘗試從 FinMind 取得最新股價；若失敗，會先使用你手動輸入的價格。
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-3 rounded-2xl bg-background/60 p-3 text-xs">
             <SummaryCell label="市值" value={formatTWD(marketValue)} />
             <SummaryCell label="成本" value={formatTWD(costBasis)} />
@@ -476,6 +536,7 @@ function HoldingForm({
             <button
               type="button"
               onClick={onCancel}
+              disabled={isSubmitting}
               className="rounded-xl bg-background py-3 text-sm font-medium"
             >
               取消
@@ -483,9 +544,10 @@ function HoldingForm({
             <button
               type="button"
               onClick={handleSubmit}
+              disabled={isSubmitting}
               className="rounded-xl gradient-primary py-3 text-sm font-semibold text-primary-foreground"
             >
-              儲存
+              {isSubmitting ? "儲存中" : "儲存"}
             </button>
           </div>
         </div>

@@ -10,6 +10,9 @@ export const holdings: Holding[] = [
     price: 1045,
     prevClose: 1020,
     sector: "半導體",
+    latestPriceDate: "2026-06-01",
+    dataSource: "FinMind",
+    priceStatus: "live",
   },
   {
     symbol: "2317",
@@ -19,6 +22,9 @@ export const holdings: Holding[] = [
     price: 198,
     prevClose: 192,
     sector: "電子",
+    latestPriceDate: "2026-06-01",
+    dataSource: "FinMind",
+    priceStatus: "live",
   },
   {
     symbol: "2454",
@@ -28,6 +34,9 @@ export const holdings: Holding[] = [
     price: 1380,
     prevClose: 1395,
     sector: "半導體",
+    latestPriceDate: "2026-06-01",
+    dataSource: "FinMind",
+    priceStatus: "live",
   },
   {
     symbol: "2412",
@@ -37,6 +46,9 @@ export const holdings: Holding[] = [
     price: 128.5,
     prevClose: 128,
     sector: "電信",
+    latestPriceDate: "2026-06-01",
+    dataSource: "FinMind",
+    priceStatus: "live",
   },
   {
     symbol: "2603",
@@ -46,6 +58,9 @@ export const holdings: Holding[] = [
     price: 142,
     prevClose: 145,
     sector: "航運",
+    latestPriceDate: "2026-06-01",
+    dataSource: "FinMind",
+    priceStatus: "live",
   },
   {
     symbol: "0050",
@@ -55,6 +70,9 @@ export const holdings: Holding[] = [
     price: 198.6,
     prevClose: 196.2,
     sector: "ETF",
+    latestPriceDate: "2026-06-01",
+    dataSource: "FinMind",
+    priceStatus: "live",
   },
 ];
 

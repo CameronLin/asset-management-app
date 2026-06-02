@@ -21,6 +21,9 @@ export type Holding = {
   price: number;
   prevClose: number;
   sector: string;
+  latestPriceDate?: string | null;
+  dataSource?: string | null;
+  priceStatus?: "live" | "manual";
 };
 
 export type Transaction = {

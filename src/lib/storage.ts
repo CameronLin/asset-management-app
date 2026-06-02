@@ -1,4 +1,5 @@
 import { accounts as mockAccounts, holdings as mockHoldings } from "./mock-data";
+import { normalizeTaiwanStockSymbol } from "./marketData";
 import type { Account, Holding, Transaction } from "./types";
 
 const STORAGE_KEYS = {
@@ -22,6 +23,26 @@ const normalizeAccount = (
 
 const normalizeAccounts = (accounts: Array<Account | (Omit<Account, "type"> & { type: string })>) =>
   accounts.map(normalizeAccount);
+
+const normalizeHolding = (holding: Holding): Holding => {
+  const normalizedSymbol = normalizeTaiwanStockSymbol(holding.symbol);
+  const normalizedPrice = Number.isFinite(holding.price) ? holding.price : 0;
+  const normalizedPrevClose = Number.isFinite(holding.prevClose)
+    ? holding.prevClose
+    : normalizedPrice;
+
+  return {
+    ...holding,
+    symbol: normalizedSymbol || holding.symbol,
+    price: normalizedPrice,
+    prevClose: normalizedPrevClose,
+    latestPriceDate: holding.latestPriceDate ?? null,
+    dataSource: holding.dataSource ?? null,
+    priceStatus: holding.priceStatus ?? "manual",
+  };
+};
+
+const normalizeHoldings = (holdings: Holding[]) => holdings.map(normalizeHolding);
 
 const readStorage = <T>(key: string, fallback: T): T => {
   if (!isBrowser()) return clone(fallback);
@@ -59,10 +80,15 @@ export const saveAccounts = (accounts: Account[]) => {
   writeStorage(STORAGE_KEYS.accounts, normalizeAccounts(accounts));
 };
 
-export const getHoldings = () => readStorage<Holding[]>(STORAGE_KEYS.holdings, mockHoldings);
+export const getHoldings = () => {
+  const holdings = readStorage<Holding[]>(STORAGE_KEYS.holdings, mockHoldings);
+  const normalized = normalizeHoldings(holdings);
+  writeStorage(STORAGE_KEYS.holdings, normalized);
+  return normalized;
+};
 
 export const saveHoldings = (holdings: Holding[]) => {
-  writeStorage(STORAGE_KEYS.holdings, holdings);
+  writeStorage(STORAGE_KEYS.holdings, normalizeHoldings(holdings));
 };
 
 export const getTransactions = () =>
