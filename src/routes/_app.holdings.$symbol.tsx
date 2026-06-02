@@ -20,9 +20,12 @@ export const Route = createFileRoute("/_app/holdings/$symbol")({
 function DetailPage() {
   const { symbol: rawSymbol } = Route.useParams();
   const symbol = normalizeTaiwanStockSymbol(rawSymbol);
+  console.log("[StockDetail] component rendered");
+  console.log("[StockDetail] route symbol:", symbol);
   const router = useRouter();
   const [holdings, setHoldings] = useState(mockHoldings);
   const holding = holdings.find((x) => x.symbol === symbol);
+  console.log("[StockDetail] matched holding:", holding);
   const [history, setHistory] = useState<TaiwanStockPricePoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -41,13 +44,17 @@ function DetailPage() {
       setHasNoHistory(false);
 
       try {
+        console.log("[StockDetail] fetching history for:", symbol);
         const records = await fetchTaiwanStockHistory(symbol, 30);
         if (cancelled) return;
 
         setHistory(records);
+        console.log("[StockDetail] history data length:", records.length);
+        console.log("[StockDetail] latest history row:", records[records.length - 1]);
         setHasNoHistory(records.length === 0);
       } catch (error) {
         if (cancelled) return;
+        console.error("[StockDetail] failed to fetch history:", error);
 
         if (error instanceof MarketDataError && error.code === "NOT_FOUND") {
           setHistory([]);
@@ -121,6 +128,15 @@ function DetailPage() {
         </div>
         <div className="w-9" />
       </header>
+
+      <section className="px-4">
+        <div className="rounded-2xl bg-surface p-4">
+          <p className="font-display text-lg font-semibold">股票詳情</p>
+          <p className="mt-1 font-mono text-sm text-muted-foreground">
+            代號：{symbol || rawSymbol}
+          </p>
+        </div>
+      </section>
 
       <section className="px-4">
         <div className="rounded-3xl bg-surface p-5">

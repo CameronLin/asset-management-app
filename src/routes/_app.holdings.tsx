@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Search, ArrowUpDown, Plus, MoreVertical, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -19,8 +19,18 @@ import type { Holding } from "@/lib/types";
 
 export const Route = createFileRoute("/_app/holdings")({
   head: () => ({ meta: [{ title: "持股管理" }] }),
-  component: HoldingsPage,
+  component: HoldingsRoute,
 });
+
+function HoldingsRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname !== "/holdings") {
+    return <Outlet />;
+  }
+
+  return <HoldingsPage />;
+}
 
 function HoldingsPage() {
   const navigate = useNavigate();
