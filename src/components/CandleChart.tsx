@@ -1,3 +1,5 @@
+import { getTaiwanStockColor } from "@/lib/stockColor";
+
 type Candle = { o: number; h: number; l: number; c: number; v: number };
 
 export function CandleChart({ data, height = 200 }: { data: Candle[]; height?: number }) {
@@ -13,12 +15,18 @@ export function CandleChart({ data, height = 200 }: { data: Candle[]; height?: n
   return (
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" style={{ height }}>
       {[0.25, 0.5, 0.75].map((p) => (
-        <line key={p} x1="0" x2={w} y1={height * p} y2={height * p}
-          stroke="var(--border)" strokeDasharray="2 4" />
+        <line
+          key={p}
+          x1="0"
+          x2={w}
+          y1={height * p}
+          y2={height * p}
+          stroke="var(--border)"
+          strokeDasharray="2 4"
+        />
       ))}
       {data.map((d, i) => {
-        const up = d.c >= d.o;
-        const color = up ? "var(--profit)" : "var(--loss)";
+        const color = getTaiwanStockColor(d.c - d.o).cssColor;
         const x = i * cw + cw / 2;
         const top = y(Math.max(d.o, d.c));
         const bot = y(Math.min(d.o, d.c));
@@ -41,12 +49,18 @@ export function VolumeChart({ data, height = 60 }: { data: Candle[]; height?: nu
   return (
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" style={{ height }}>
       {data.map((d, i) => {
-        const up = d.c >= d.o;
         const h = (d.v / max) * height;
         const x = i * cw + cw / 2 - bw / 2;
         return (
-          <rect key={i} x={x} y={height - h} width={bw} height={h}
-            fill={up ? "var(--profit)" : "var(--loss)"} opacity="0.6" />
+          <rect
+            key={i}
+            x={x}
+            y={height - h}
+            width={bw}
+            height={h}
+            fill={getTaiwanStockColor(d.c - d.o).cssColor}
+            opacity="0.6"
+          />
         );
       })}
     </svg>

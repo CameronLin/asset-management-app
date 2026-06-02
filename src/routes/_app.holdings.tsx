@@ -8,6 +8,7 @@ import {
   calculateHoldingReturnRate,
 } from "@/lib/calculations";
 import { fetchTaiwanStockLatestPrice } from "@/lib/marketData";
+import { getTaiwanStockColor } from "@/lib/stockColor";
 import { getHoldings, saveHoldings } from "@/lib/storage";
 import type { Holding } from "@/lib/types";
 
@@ -53,6 +54,7 @@ function HoldingsPage() {
 
   const totalValue = enriched.reduce((sum, holding) => sum + holding.marketValue, 0);
   const totalPnL = enriched.reduce((sum, holding) => sum + holding.profitLoss, 0);
+  const totalPnLColor = getTaiwanStockColor(totalPnL);
 
   useEffect(() => {
     try {
@@ -165,11 +167,9 @@ function HoldingsPage() {
           <p className="text-xs text-muted-foreground">總市值</p>
           <p className="mt-1 font-display text-lg font-bold tabular">{formatTWD(totalValue)}</p>
         </div>
-        <div className={`rounded-2xl p-4 ${totalPnL >= 0 ? "bg-profit/10" : "bg-loss/10"}`}>
+        <div className={`rounded-2xl p-4 ${totalPnLColor.bgClass}`}>
           <p className="text-xs text-muted-foreground">未實現損益</p>
-          <p
-            className={`mt-1 font-display text-lg font-bold tabular ${totalPnL >= 0 ? "text-profit" : "text-loss"}`}
-          >
+          <p className={`mt-1 font-display text-lg font-bold tabular ${totalPnLColor.textClass}`}>
             {formatTWD(totalPnL, { sign: true })}
           </p>
         </div>
@@ -212,7 +212,7 @@ function HoldingsPage() {
 
       <div className="space-y-2">
         {enriched.map((holding) => {
-          const up = holding.profitLoss >= 0;
+          const stockColor = getTaiwanStockColor(holding.profitLoss);
 
           return (
             <div key={holding.symbol} className="relative rounded-2xl bg-surface p-4">
@@ -223,7 +223,7 @@ function HoldingsPage() {
                   className="flex min-w-0 flex-1 items-start gap-3 active:scale-[0.99] transition-transform"
                 >
                   <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold ${up ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss"}`}
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold ${stockColor.bgClass} ${stockColor.textClass}`}
                   >
                     {holding.symbol}
                   </div>
@@ -237,7 +237,7 @@ function HoldingsPage() {
                     <p className="font-mono text-base font-bold tabular">
                       {holding.price.toFixed(2)}
                     </p>
-                    <p className={`font-mono text-xs tabular ${up ? "text-profit" : "text-loss"}`}>
+                    <p className={`font-mono text-xs tabular ${stockColor.textClass}`}>
                       {formatPct(holding.returnRate)}
                     </p>
                   </div>
@@ -258,7 +258,7 @@ function HoldingsPage() {
                 <Cell
                   label="損益"
                   value={formatTWD(holding.profitLoss, { sign: true })}
-                  className={up ? "text-profit" : "text-loss"}
+                  className={stockColor.textClass}
                 />
               </div>
 
@@ -331,6 +331,7 @@ function HoldingForm({
   const costBasis = shares * avgCost;
   const profitLoss = marketValue - costBasis;
   const returnRate = costBasis === 0 ? 0 : (profitLoss / costBasis) * 100;
+  const stockColor = getTaiwanStockColor(profitLoss);
 
   const handleSubmit = () => {
     const stockSymbol = form.stockSymbol.trim().toUpperCase();
@@ -463,12 +464,12 @@ function HoldingForm({
             <SummaryCell
               label="損益"
               value={formatTWD(profitLoss, { sign: true })}
-              className={profitLoss >= 0 ? "text-profit" : "text-loss"}
+              className={stockColor.textClass}
             />
             <SummaryCell
               label="報酬率"
               value={formatPct(returnRate)}
-              className={profitLoss >= 0 ? "text-profit" : "text-loss"}
+              className={stockColor.textClass}
             />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">

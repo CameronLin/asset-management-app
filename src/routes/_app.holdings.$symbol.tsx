@@ -1,8 +1,17 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ChevronLeft, TrendingUp, Activity, Newspaper, Brain } from "lucide-react";
+import {
+  ChevronLeft,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Newspaper,
+  Brain,
+  Minus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { holdings as mockHoldings, strategies, formatTWD, formatPct } from "@/lib/mock-data";
 import { fetchTaiwanStockHistory, MarketDataError } from "@/lib/marketData";
+import { getTaiwanStockColor } from "@/lib/stockColor";
 import { getHoldings } from "@/lib/storage";
 import { CandleChart, VolumeChart } from "@/components/CandleChart";
 
@@ -88,7 +97,7 @@ function DetailPage() {
     trendStart && trendEnd ? trendEnd.close - trendStart.close : h.price - h.prevClose;
   const trendPct =
     trendStart && trendStart.close !== 0 ? (trendChange / trendStart.close) * 100 : 0;
-  const up = trendChange >= 0;
+  const trendColor = getTaiwanStockColor(trendChange);
   const candles = selectedHistory.map((item) => ({
     o: item.open,
     h: item.high,
@@ -99,6 +108,9 @@ function DetailPage() {
   const strat = strategies.find((s) => s.symbol === h.symbol);
   const latestHistory = history.at(-1);
   const priceToDisplay = latestHistory?.close ?? h.price;
+  const pnlColor = getTaiwanStockColor(pnl);
+  const TrendIcon =
+    trendColor.color === "red" ? TrendingUp : trendColor.color === "green" ? TrendingDown : Minus;
 
   return (
     <div className="space-y-5 pb-6">
@@ -121,7 +133,10 @@ function DetailPage() {
       <section className="px-4">
         <div className="flex items-end gap-3">
           <p className="font-display text-4xl font-bold tabular">{priceToDisplay.toFixed(2)}</p>
-          <p className={`pb-1.5 font-mono text-sm tabular ${up ? "text-profit" : "text-loss"}`}>
+          <p
+            className={`flex items-center gap-1 pb-1.5 font-mono text-sm tabular ${trendColor.textClass}`}
+          >
+            <TrendIcon className={`h-4 w-4 ${trendColor.iconClass}`} />
             {trendChange >= 0 ? "+" : ""}
             {trendChange.toFixed(2)} ({formatPct(trendPct)})
           </p>
@@ -196,7 +211,7 @@ function DetailPage() {
             <PosCell
               label="損益"
               value={`${formatTWD(pnl, { sign: true })} (${formatPct(pct)})`}
-              className={pnl >= 0 ? "text-profit" : "text-loss"}
+              className={pnlColor.textClass}
             />
           </div>
         </div>
@@ -264,9 +279,9 @@ function ActionBadge({
   target: number;
 }) {
   const map = {
-    buy: { label: "建議買進", cls: "bg-profit/10 text-profit" },
-    hold: { label: "建議觀望", cls: "bg-warning/15 text-warning" },
-    sell: { label: "建議賣出", cls: "bg-loss/10 text-loss" },
+    buy: { label: "建議買進", cls: "bg-price-red/10 text-price-red" },
+    hold: { label: "建議觀望", cls: "bg-price-gray/10 text-price-gray" },
+    sell: { label: "建議賣出", cls: "bg-price-green/10 text-price-green" },
   } as const;
 
   return (

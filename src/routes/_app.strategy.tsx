@@ -1,5 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, Activity, TrendingUp, Newspaper, AlertTriangle, ChevronRight } from "lucide-react";
+import {
+  Sparkles,
+  Activity,
+  TrendingUp,
+  Newspaper,
+  AlertTriangle,
+  ChevronRight,
+} from "lucide-react";
 import { strategies } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/strategy")({
@@ -8,9 +15,9 @@ export const Route = createFileRoute("/_app/strategy")({
 });
 
 const ACTION = {
-  buy: { label: "買進", cls: "bg-profit/10 text-profit", ring: "ring-profit/30" },
-  hold: { label: "觀望", cls: "bg-warning/15 text-warning", ring: "ring-warning/30" },
-  sell: { label: "賣出", cls: "bg-loss/10 text-loss", ring: "ring-loss/30" },
+  buy: { label: "買進", cls: "bg-price-red/10 text-price-red", ring: "ring-price-red/30" },
+  hold: { label: "觀望", cls: "bg-price-gray/10 text-price-gray", ring: "ring-price-gray/30" },
+  sell: { label: "賣出", cls: "bg-price-green/10 text-price-green", ring: "ring-price-green/30" },
 } as const;
 
 function StrategyPage() {
@@ -34,9 +41,9 @@ function StrategyPage() {
         <p className="text-xs uppercase tracking-widest text-muted-foreground">今日觀察池</p>
         <p className="mt-1 font-display text-3xl font-bold tabular">{strategies.length} 檔</p>
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat label="買進" value={buys} cls="text-profit" />
-          <Stat label="觀望" value={holds} cls="text-warning" />
-          <Stat label="賣出" value={sells} cls="text-loss" />
+          <Stat label="買進" value={buys} cls="text-price-red" />
+          <Stat label="觀望" value={holds} cls="text-price-gray" />
+          <Stat label="賣出" value={sells} cls="text-price-green" />
         </div>
       </div>
 
@@ -53,10 +60,15 @@ function StrategyPage() {
         {strategies.map((s) => {
           const meta = ACTION[s.action];
           return (
-            <article key={s.symbol} className={`overflow-hidden rounded-2xl bg-surface ring-1 ${meta.ring}`}>
+            <article
+              key={s.symbol}
+              className={`overflow-hidden rounded-2xl bg-surface ring-1 ${meta.ring}`}
+            >
               <div className="flex items-center justify-between border-b border-border bg-surface-elevated/50 px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <span className={`rounded-lg px-2.5 py-1 font-display text-xs font-bold ${meta.cls}`}>
+                  <span
+                    className={`rounded-lg px-2.5 py-1 font-display text-xs font-bold ${meta.cls}`}
+                  >
                     {meta.label}
                   </span>
                   <div>
@@ -68,7 +80,9 @@ function StrategyPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-muted-foreground">信心度</p>
-                  <p className="font-mono text-sm font-bold tabular text-primary">{s.confidence}%</p>
+                  <p className="font-mono text-sm font-bold tabular text-primary">
+                    {s.confidence}%
+                  </p>
                 </div>
               </div>
 
@@ -107,7 +121,15 @@ function Stat({ label, value, cls }: { label: string; value: number; cls: string
   );
 }
 
-function Reason({ icon: Icon, label, text }: { icon: React.ElementType; label: string; text: string }) {
+function Reason({
+  icon: Icon,
+  label,
+  text,
+}: {
+  icon: React.ElementType;
+  label: string;
+  text: string;
+}) {
   return (
     <div className="flex gap-3">
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">

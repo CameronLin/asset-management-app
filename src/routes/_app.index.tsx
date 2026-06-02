@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   ArrowDownRight,
+  Minus,
   Bell,
   Eye,
   EyeOff,
@@ -23,6 +24,7 @@ import {
   calculateHoldingReturnRate,
   calculatePortfolioSummary,
 } from "@/lib/calculations";
+import { getTaiwanStockColor } from "@/lib/stockColor";
 import { getAccounts, getHoldings } from "@/lib/storage";
 import { Sparkline } from "@/components/Sparkline";
 
@@ -92,7 +94,7 @@ function Overview() {
           </div>
 
           <div className="-mx-2 mt-4">
-            <Sparkline data={series} positive={t.todayPnL >= 0} height={50} className="w-full" />
+            <Sparkline data={series} change={t.todayPnL} height={50} className="w-full" />
           </div>
         </div>
       </div>
@@ -122,7 +124,7 @@ function Overview() {
           {holdings.slice(0, 3).map((h) => {
             const pnl = calculateHoldingProfitLoss(h);
             const pct = calculateHoldingReturnRate(h);
-            const up = pnl >= 0;
+            const stockColor = getTaiwanStockColor(pnl);
             return (
               <Link
                 key={h.symbol}
@@ -132,7 +134,7 @@ function Overview() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl font-mono text-xs font-semibold ${up ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss"}`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl font-mono text-xs font-semibold ${stockColor.bgClass} ${stockColor.textClass}`}
                   >
                     {h.symbol}
                   </div>
@@ -145,9 +147,7 @@ function Overview() {
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-sm font-semibold tabular">{h.price.toFixed(2)}</p>
-                  <p className={`text-xs tabular ${up ? "text-profit" : "text-loss"}`}>
-                    {formatPct(pct)}
-                  </p>
+                  <p className={`text-xs tabular ${stockColor.textClass}`}>{formatPct(pct)}</p>
                 </div>
               </Link>
             );
@@ -211,20 +211,23 @@ function PnLPill({
   pct: number;
   hidden: boolean;
 }) {
-  const up = value >= 0;
-  const Icon = up ? ArrowUpRight : ArrowDownRight;
+  const stockColor = getTaiwanStockColor(value);
+  const Icon =
+    stockColor.color === "red"
+      ? ArrowUpRight
+      : stockColor.color === "green"
+        ? ArrowDownRight
+        : Minus;
   return (
-    <div className={`rounded-2xl p-3 ${up ? "bg-profit/10" : "bg-loss/10"}`}>
+    <div className={`rounded-2xl p-3 ${stockColor.bgClass}`}>
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <div className="mt-1 flex items-center gap-1">
-        <Icon className={`h-4 w-4 ${up ? "text-profit" : "text-loss"}`} />
-        <span
-          className={`font-mono text-base font-semibold tabular ${up ? "text-profit" : "text-loss"}`}
-        >
+        <Icon className={`h-4 w-4 ${stockColor.iconClass}`} />
+        <span className={`font-mono text-base font-semibold tabular ${stockColor.textClass}`}>
           {hidden ? "••••" : formatTWD(value, { sign: true })}
         </span>
       </div>
-      <p className={`text-[11px] tabular ${up ? "text-profit" : "text-loss"}`}>{formatPct(pct)}</p>
+      <p className={`text-[11px] tabular ${stockColor.textClass}`}>{formatPct(pct)}</p>
     </div>
   );
 }

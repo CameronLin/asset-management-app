@@ -36,6 +36,9 @@
   --color-loss: var(--loss);
   --color-neutral: var(--neutral);
   --color-warning: var(--warning);
+  --color-price-red: var(--price-red);
+  --color-price-green: var(--price-green);
+  --color-price-gray: var(--price-gray);
   --font-display: "Sora", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
@@ -77,6 +80,9 @@
   --loss: oklch(0.68 0.22 22);
   --neutral: oklch(0.7 0.02 258);
   --warning: oklch(0.82 0.16 80);
+  --price-red: var(--loss);
+  --price-green: var(--profit);
+  --price-gray: var(--neutral);
 
   --gradient-primary: linear-gradient(135deg, oklch(0.78 0.16 200), oklch(0.7 0.18 240));
   --gradient-profit: linear-gradient(135deg, oklch(0.78 0.19 150), oklch(0.72 0.18 180));
@@ -93,27 +99,98 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { background-color: var(--color-background); color: var(--color-foreground); }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
   body {
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
-  .font-mono { font-family: var(--font-mono); }
-  .tabular { font-variant-numeric: tabular-nums; }
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer utilities {
-  .text-profit { color: var(--profit); }
-  .text-loss { color: var(--loss); }
-  .bg-profit\/10 { background-color: color-mix(in oklab, var(--profit) 12%, transparent); }
-  .bg-loss\/10 { background-color: color-mix(in oklab, var(--loss) 12%, transparent); }
-  .bg-warning\/15 { background-color: color-mix(in oklab, var(--warning) 18%, transparent); }
-  .bg-primary\/10 { background-color: color-mix(in oklab, var(--primary) 12%, transparent); }
-  .gradient-hero { background-image: var(--gradient-hero); }
-  .gradient-card { background-image: var(--gradient-card); }
-  .gradient-primary { background-image: var(--gradient-primary); }
-  .shadow-card { box-shadow: var(--shadow-card); }
-  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .text-profit {
+    color: var(--profit);
+  }
+  .text-loss {
+    color: var(--loss);
+  }
+  .bg-profit\/10 {
+    background-color: color-mix(in oklab, var(--profit) 12%, transparent);
+  }
+  .bg-loss\/10 {
+    background-color: color-mix(in oklab, var(--loss) 12%, transparent);
+  }
+  .bg-warning\/15 {
+    background-color: color-mix(in oklab, var(--warning) 18%, transparent);
+  }
+  .bg-primary\/10 {
+    background-color: color-mix(in oklab, var(--primary) 12%, transparent);
+  }
+  .text-price-red {
+    color: var(--price-red);
+  }
+  .text-price-green {
+    color: var(--price-green);
+  }
+  .text-price-gray {
+    color: var(--price-gray);
+  }
+  .bg-price-red\/10 {
+    background-color: color-mix(in oklab, var(--price-red) 12%, transparent);
+  }
+  .bg-price-green\/10 {
+    background-color: color-mix(in oklab, var(--price-green) 12%, transparent);
+  }
+  .bg-price-gray\/10 {
+    background-color: color-mix(in oklab, var(--price-gray) 12%, transparent);
+  }
+  .border-price-red\/30 {
+    border-color: color-mix(in oklab, var(--price-red) 30%, transparent);
+  }
+  .border-price-green\/30 {
+    border-color: color-mix(in oklab, var(--price-green) 30%, transparent);
+  }
+  .border-price-gray\/30 {
+    border-color: color-mix(in oklab, var(--price-gray) 30%, transparent);
+  }
+  .ring-price-red\/30 {
+    --tw-ring-color: color-mix(in oklab, var(--price-red) 30%, transparent);
+  }
+  .ring-price-green\/30 {
+    --tw-ring-color: color-mix(in oklab, var(--price-green) 30%, transparent);
+  }
+  .ring-price-gray\/30 {
+    --tw-ring-color: color-mix(in oklab, var(--price-gray) 30%, transparent);
+  }
+  .gradient-hero {
+    background-image: var(--gradient-hero);
+  }
+  .gradient-card {
+    background-image: var(--gradient-card);
+  }
+  .gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
 }

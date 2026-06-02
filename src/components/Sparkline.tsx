@@ -1,6 +1,8 @@
-type Props = { data: number[]; positive?: boolean; height?: number; className?: string };
+import { getTaiwanStockColor } from "@/lib/stockColor";
 
-export function Sparkline({ data, positive = true, height = 40, className }: Props) {
+type Props = { data: number[]; change?: number; height?: number; className?: string };
+
+export function Sparkline({ data, change = 1, height = 40, className }: Props) {
   if (!data.length) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -13,10 +15,15 @@ export function Sparkline({ data, positive = true, height = 40, className }: Pro
   });
   const path = `M${pts.join(" L")}`;
   const area = `${path} L${w},${height} L0,${height} Z`;
-  const color = positive ? "var(--profit)" : "var(--loss)";
+  const color = getTaiwanStockColor(change).cssColor;
   const id = `g-${Math.random().toString(36).slice(2, 8)}`;
   return (
-    <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" className={className} style={{ height }}>
+    <svg
+      viewBox={`0 0 ${w} ${height}`}
+      preserveAspectRatio="none"
+      className={className}
+      style={{ height }}
+    >
       <defs>
         <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.35" />
@@ -24,7 +31,13 @@ export function Sparkline({ data, positive = true, height = 40, className }: Pro
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${id})`} />
-      <path d={path} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
