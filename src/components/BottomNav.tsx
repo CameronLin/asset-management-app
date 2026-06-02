@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Briefcase, Wallet, Sparkles, LineChart } from "lucide-react";
+import { Home, Briefcase, Wallet, Newspaper, LineChart } from "lucide-react";
 
 const items = [
   { to: "/", label: "總覽", icon: Home },
   { to: "/holdings", label: "持股", icon: Briefcase },
   { to: "/accounts", label: "帳戶", icon: Wallet },
-  { to: "/strategy", label: "策略", icon: Sparkles },
+  { to: "/strategy", label: "新聞", icon: Newspaper },
   { to: "/market", label: "行情", icon: LineChart },
 ] as const;
 
@@ -29,7 +29,9 @@ export function BottomNav() {
                 >
                   <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.8} />
                 </div>
-                <span className={`text-[10px] font-medium ${active ? "text-primary" : "text-muted-foreground"}`}>
+                <span
+                  className={`text-[10px] font-medium ${active ? "text-primary" : "text-muted-foreground"}`}
+                >
                   {label}
                 </span>
               </Link>

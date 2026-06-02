@@ -1,143 +1,207 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Sparkles,
-  Activity,
-  TrendingUp,
-  Newspaper,
-  AlertTriangle,
-  ChevronRight,
-} from "lucide-react";
-import { strategies } from "@/lib/mock-data";
+import { createFileRoute } from "@tanstack/react-router";
+import { Flame, Landmark, Cpu, Newspaper, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { mockNews } from "@/lib/mockNews";
+import type { NewsCategory, NewsItem } from "@/lib/newsTypes";
+import { getHoldings } from "@/lib/storage";
+import type { Holding } from "@/lib/types";
 
 export const Route = createFileRoute("/_app/strategy")({
-  head: () => ({ meta: [{ title: "投資策略" }] }),
-  component: StrategyPage,
+  head: () => ({ meta: [{ title: "股市新聞" }] }),
+  component: NewsPage,
 });
 
-const ACTION = {
-  buy: { label: "買進", cls: "bg-price-red/10 text-price-red", ring: "ring-price-red/30" },
-  hold: { label: "觀望", cls: "bg-price-gray/10 text-price-gray", ring: "ring-price-gray/30" },
-  sell: { label: "賣出", cls: "bg-price-green/10 text-price-green", ring: "ring-price-green/30" },
-} as const;
+const TABS: NewsCategory[] = ["熱門", "台股", "美股", "半導體", "金融", "我的持股"];
 
-function StrategyPage() {
-  const buys = strategies.filter((s) => s.action === "buy").length;
-  const holds = strategies.filter((s) => s.action === "hold").length;
-  const sells = strategies.filter((s) => s.action === "sell").length;
+function NewsPage() {
+  const [activeTab, setActiveTab] = useState<NewsCategory>("熱門");
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+
+  useEffect(() => {
+    setHoldings(getHoldings());
+  }, []);
+
+  const holdingSymbols = useMemo(
+    () => new Set(holdings.map((holding) => holding.symbol)),
+    [holdings],
+  );
+
+  const filteredNews = useMemo(() => {
+    if (activeTab === "我的持股") {
+      return mockNews.filter((item) =>
+        item.relatedSymbols.some((symbol) => holdingSymbols.has(symbol)),
+      );
+    }
+
+    if (activeTab === "熱門") {
+      return mockNews.filter((item) => item.tags.includes("熱門"));
+    }
+
+    return mockNews.filter((item) => item.category === activeTab || item.tags.includes(activeTab));
+  }, [activeTab, holdingSymbols]);
+
+  const holdingRelatedNews = useMemo(
+    () =>
+      mockNews.filter((item) => item.relatedSymbols.some((symbol) => holdingSymbols.has(symbol))),
+    [holdingSymbols],
+  );
+
+  const openNews = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   return (
-    <div className="space-y-5 px-4 pt-6">
-      <header className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h1 className="font-display text-2xl font-semibold">投資策略</h1>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">AI 每日精選 · 2026/06/01</p>
-        </div>
+    <div className="space-y-5 px-4 pb-28 pt-6">
+      <header>
+        <h1 className="font-display text-2xl font-semibold">股市新聞</h1>
+        <p className="mt-1 text-xs text-muted-foreground">掌握熱門財經與持股相關消息</p>
       </header>
 
       <div className="rounded-3xl gradient-hero p-5">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">今日觀察池</p>
-        <p className="mt-1 font-display text-3xl font-bold tabular">{strategies.length} 檔</p>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat label="買進" value={buys} cls="text-price-red" />
-          <Stat label="觀望" value={holds} cls="text-price-gray" />
-          <Stat label="賣出" value={sells} cls="text-price-green" />
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-warning/30 bg-warning/15 p-3">
-        <div className="flex gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
-          <p className="text-xs text-muted-foreground">
-            策略內容僅供參考，並非投資建議。投資前請審慎評估自身風險承受度。
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">新聞狀態</p>
+        <p className="mt-1 font-display text-3xl font-bold tabular">{filteredNews.length} 則</p>
+        <div className="mt-4 rounded-2xl bg-background/40 p-3">
+          <p className="text-xs text-muted-foreground">資料來源</p>
+          <p className="mt-0.5 font-display text-xl font-bold text-primary">示範資料</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            尚未串接新聞 API，以下內容僅供版面與互動展示。
           </p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {strategies.map((s) => {
-          const meta = ACTION[s.action];
-          return (
-            <article
-              key={s.symbol}
-              className={`overflow-hidden rounded-2xl bg-surface ring-1 ${meta.ring}`}
-            >
-              <div className="flex items-center justify-between border-b border-border bg-surface-elevated/50 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`rounded-lg px-2.5 py-1 font-display text-xs font-bold ${meta.cls}`}
-                  >
-                    {meta.label}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold">{s.name}</p>
-                    <p className="font-mono text-[11px] text-muted-foreground">
-                      {s.symbol} · 現價 {s.price} → 目標 {s.target}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-muted-foreground">信心度</p>
-                  <p className="font-mono text-sm font-bold tabular text-primary">
-                    {s.confidence}%
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2 p-4">
-                <Reason icon={Activity} label="技術面" text={s.technical} />
-                <Reason icon={TrendingUp} label="基本面" text={s.fundamental} />
-                <Reason icon={Newspaper} label="新聞面" text={s.news} />
-                <div className="flex gap-2 rounded-xl bg-warning/15 p-3">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-                  <p className="text-xs text-muted-foreground">{s.risk}</p>
-                </div>
-              </div>
-
-              <Link
-                to="/holdings/$symbol"
-                params={{ symbol: s.symbol }}
-                className="flex items-center justify-between border-t border-border bg-background/40 px-4 py-3 text-xs text-primary"
-              >
-                <span>查看完整分析</span>
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-            </article>
-          );
-        })}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`shrink-0 rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+              activeTab === tab
+                ? "bg-primary text-primary-foreground"
+                : "bg-surface text-muted-foreground"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
+
+      {activeTab === "我的持股" && (
+        <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <Flame className="h-4 w-4 text-primary" />
+            <p className="text-sm font-semibold">我的持股相關新聞</p>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">目前依你的持股清單比對示範新聞資料。</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {holdingRelatedNews.length > 0
+              ? `符合 ${holdingRelatedNews.length} 則`
+              : "目前沒有與持股相關的示範新聞"}
+          </p>
+        </section>
+      )}
+
+      {filteredNews.length === 0 ? (
+        <div className="rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted-foreground">
+          目前沒有相關新聞
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredNews.map((item) => (
+            <NewsCard key={item.id} item={item} onOpen={openNews} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function Stat({ label, value, cls }: { label: string; value: number; cls: string }) {
+function NewsCard({ item, onOpen }: { item: NewsItem; onOpen: (url: string) => void }) {
   return (
-    <div className="rounded-xl bg-background/40 p-3 text-center">
-      <p className={`font-display text-xl font-bold tabular ${cls}`}>{value}</p>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">{label}</p>
-    </div>
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(item.url)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(item.url);
+        }
+      }}
+      className="rounded-2xl bg-surface p-4 transition-transform active:scale-[0.99]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {item.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+          <h2 className="text-base font-semibold leading-snug">{item.title}</h2>
+        </div>
+        <Newspaper className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+      </div>
+
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.summary}</p>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <MetaRow label="來源" value={item.source} icon={Landmark} />
+        <MetaRow label="發布時間" value={item.publishedAt} icon={Flame} />
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-background/40 p-3">
+        <p className="text-[11px] text-muted-foreground">相關股票</p>
+        <p className="mt-1 font-mono text-xs text-foreground">
+          {item.relatedSymbols.length > 0 ? item.relatedSymbols.join("、") : "無"}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {item.relatedStockNames.length > 0 ? item.relatedStockNames.join("、") : "無"}
+        </p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Cpu className="h-3.5 w-3.5" />
+          <span>{item.category}</span>
+        </div>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpen(item.url);
+          }}
+          className="inline-flex items-center gap-1 rounded-xl bg-primary/10 px-3 py-2 text-xs font-medium text-primary"
+        >
+          閱讀全文
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </article>
   );
 }
 
-function Reason({
+function MetaRow({
   icon: Icon,
   label,
-  text,
+  value,
 }: {
   icon: React.ElementType;
   label: string;
-  text: string;
+  value: string;
 }) {
   return (
-    <div className="flex gap-3">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+    <div className="flex items-center gap-2 rounded-xl bg-background/30 px-3 py-2">
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
         <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
-      <div className="flex-1">
-        <p className="text-xs font-semibold">{label}</p>
-        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{text}</p>
+      <div className="min-w-0">
+        <p className="text-[11px] text-muted-foreground">{label}</p>
+        <p className="truncate text-xs font-medium">{value}</p>
       </div>
     </div>
   );
