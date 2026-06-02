@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Landmark, Wallet, Coins, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { accounts as initial, formatTWD } from "@/lib/mock-data";
 import { getAccounts, saveAccounts } from "@/lib/storage";
 import type { Account, AccountType } from "@/lib/types";
@@ -50,6 +51,7 @@ function AccountsPage() {
 
   const handleSave = (a: Account) => {
     try {
+      const isEditing = list.some((item) => item.id === a.id);
       setList((prev) => {
         const exists = prev.find((p) => p.id === a.id);
         const next = exists ? prev.map((p) => (p.id === a.id ? a : p)) : [...prev, a];
@@ -57,6 +59,7 @@ function AccountsPage() {
         return next;
       });
       setActionError(null);
+      toast.success(isEditing ? "帳戶已更新" : "新增帳戶成功");
       setShowForm(false);
       setEditing(null);
     } catch {
@@ -210,6 +213,7 @@ function AccountForm({
   onSave: (a: Account) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<Account>(
     initial ?? {
       id: `a${Date.now()}`,
@@ -232,6 +236,11 @@ function AccountForm({
       return;
     }
 
+    if (!institution) {
+      setError("金融機構不可空白。");
+      return;
+    }
+
     if (balance < 0 || investable < 0) {
       setError("金額不可小於 0。");
       return;
@@ -243,109 +252,123 @@ function AccountForm({
     }
 
     setError(null);
-    onSave({
-      ...form,
-      name,
-      institution,
-      balance,
-      investable,
-    });
+    setIsSubmitting(true);
+
+    try {
+      onSave({
+        ...form,
+        name,
+        institution,
+        balance,
+        investable,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="mx-auto w-full max-w-md rounded-t-3xl bg-surface-elevated p-5 pb-8">
-        <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-muted" />
-        <h3 className="font-display text-lg font-semibold">{initial ? "編輯帳戶" : "新增帳戶"}</h3>
-        <div className="mt-4 space-y-3">
-          {error && (
-            <div className="rounded-xl border border-loss/30 bg-loss/10 px-3 py-2 text-xs text-loss">
-              {error}
-            </div>
-          )}
-          <Field label="帳戶名稱">
-            <input
-              value={form.name}
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-                setError(null);
-              }}
-              className="w-full rounded-xl bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-              placeholder="例：活存主帳戶"
-            />
-          </Field>
-          <Field label="金融機構">
-            <input
-              value={form.institution}
-              onChange={(e) => {
-                setForm({ ...form, institution: e.target.value });
-                setError(null);
-              }}
-              className="w-full rounded-xl bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-              placeholder="例：玉山銀行"
-            />
-          </Field>
-          <Field label="類型">
-            <div className="grid grid-cols-3 gap-2">
-              {ACCOUNT_TYPES.map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  onClick={() => {
-                    setForm({ ...form, type: t });
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+      <div className="mx-auto flex max-h-[calc(100vh-0.75rem)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-surface-elevated shadow-card">
+        <div className="flex-1 overflow-y-auto px-5 pb-6 pt-5">
+          <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-muted" />
+          <h3 className="font-display text-lg font-semibold">
+            {initial ? "編輯帳戶" : "新增帳戶"}
+          </h3>
+          <div className="mt-4 space-y-3 pb-6">
+            {error && (
+              <div className="rounded-xl border border-loss/30 bg-loss/10 px-3 py-2 text-xs text-loss">
+                {error}
+              </div>
+            )}
+            <Field label="帳戶名稱">
+              <input
+                value={form.name}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  setError(null);
+                }}
+                className="w-full rounded-xl bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                placeholder="例：活存主帳戶"
+              />
+            </Field>
+            <Field label="金融機構">
+              <input
+                value={form.institution}
+                onChange={(e) => {
+                  setForm({ ...form, institution: e.target.value });
+                  setError(null);
+                }}
+                className="w-full rounded-xl bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                placeholder="例：玉山銀行"
+              />
+            </Field>
+            <Field label="類型">
+              <div className="grid grid-cols-3 gap-2">
+                {ACCOUNT_TYPES.map((t) => (
+                  <button
+                    type="button"
+                    key={t}
+                    onClick={() => {
+                      setForm({ ...form, type: t });
+                      setError(null);
+                    }}
+                    className={`rounded-xl py-2.5 text-xs font-medium transition-colors ${
+                      form.type === t
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground"
+                    }`}
+                  >
+                    {TYPE_META[t].label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="餘額">
+                <input
+                  type="number"
+                  value={form.balance || ""}
+                  min={0}
+                  onChange={(e) => {
+                    setForm({ ...form, balance: sanitizeAmount(e.target.value) });
                     setError(null);
                   }}
-                  className={`rounded-xl py-2.5 text-xs font-medium transition-colors ${
-                    form.type === t
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-muted-foreground"
-                  }`}
-                >
-                  {TYPE_META[t].label}
-                </button>
-              ))}
+                  className="w-full rounded-xl bg-background px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </Field>
+              <Field label="可投資">
+                <input
+                  type="number"
+                  value={form.investable || ""}
+                  min={0}
+                  onChange={(e) => {
+                    setForm({ ...form, investable: sanitizeAmount(e.target.value) });
+                    setError(null);
+                  }}
+                  className="w-full rounded-xl bg-background px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+              </Field>
             </div>
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="餘額">
-              <input
-                type="number"
-                value={form.balance || ""}
-                min={0}
-                onChange={(e) => {
-                  setForm({ ...form, balance: sanitizeAmount(e.target.value) });
-                  setError(null);
-                }}
-                className="w-full rounded-xl bg-background px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary"
-              />
-            </Field>
-            <Field label="可投資">
-              <input
-                type="number"
-                value={form.investable || ""}
-                min={0}
-                onChange={(e) => {
-                  setForm({ ...form, investable: sanitizeAmount(e.target.value) });
-                  setError(null);
-                }}
-                className="w-full rounded-xl bg-background px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-primary"
-              />
-            </Field>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+        </div>
+        <div className="border-t border-border bg-surface-elevated px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-4">
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-xl bg-background py-3 text-sm font-medium"
+              disabled={isSubmitting}
+              className="rounded-xl bg-background py-3 text-sm font-medium disabled:opacity-60"
             >
               取消
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              className="rounded-xl gradient-primary py-3 text-sm font-semibold text-primary-foreground"
+              disabled={isSubmitting}
+              className="rounded-xl gradient-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
-              儲存
+              {isSubmitting ? "儲存中" : initial ? "儲存修改" : "新增帳戶"}
             </button>
           </div>
         </div>
