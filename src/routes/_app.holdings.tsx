@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Search, ArrowUpDown, Plus, MoreVertical, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_app/holdings")({
 });
 
 function HoldingsPage() {
+  const navigate = useNavigate();
   const [holdings, setHoldings] = useState(mockHoldings);
   const [sort, setSort] = useState<"pnl" | "value" | "pct">("value");
   const [query, setQuery] = useState("");
@@ -255,13 +256,26 @@ function HoldingsPage() {
           const stockColor = getTaiwanStockColor(holding.profitLoss);
 
           return (
-            <div key={holding.symbol} className="relative rounded-2xl bg-surface p-4">
+            <div
+              key={holding.symbol}
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                navigate({ to: "/holdings/$symbol", params: { symbol: holding.symbol } })
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  void navigate({
+                    to: "/holdings/$symbol",
+                    params: { symbol: holding.symbol },
+                  });
+                }
+              }}
+              className="relative cursor-pointer rounded-2xl bg-surface p-4 transition-transform active:scale-[0.99]"
+            >
               <div className="flex items-start justify-between">
-                <Link
-                  to="/holdings/$symbol"
-                  params={{ symbol: holding.symbol }}
-                  className="flex min-w-0 flex-1 items-start gap-3 active:scale-[0.99] transition-transform"
-                >
+                <div className="flex min-w-0 flex-1 items-start gap-3">
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold ${stockColor.bgClass} ${stockColor.textClass}`}
                   >
@@ -276,7 +290,7 @@ function HoldingsPage() {
                         : "尚未取得即時股價"}
                     </p>
                   </div>
-                </Link>
+                </div>
                 <div className="ml-3 flex items-start gap-2">
                   <div className="text-right">
                     <p className="font-mono text-base font-bold tabular">
@@ -291,7 +305,10 @@ function HoldingsPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setOpenMenu(openMenu === holding.symbol ? null : holding.symbol)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setOpenMenu(openMenu === holding.symbol ? null : holding.symbol);
+                    }}
                     className="text-muted-foreground"
                   >
                     <MoreVertical className="h-4 w-4" />
@@ -314,10 +331,11 @@ function HoldingsPage() {
                 <div className="absolute right-3 top-12 z-10 min-w-[120px] overflow-hidden rounded-xl border border-border bg-surface-elevated shadow-card">
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setOpenMenu(null);
                       setEditing(holding);
                       setShowForm(true);
-                      setOpenMenu(null);
                     }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-muted"
                   >
@@ -325,7 +343,10 @@ function HoldingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(holding.symbol)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDelete(holding.symbol);
+                    }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-xs text-loss hover:bg-muted"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> 刪除
