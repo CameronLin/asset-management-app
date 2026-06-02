@@ -3,6 +3,7 @@ import type {
   Account,
   AssetAllocationItem,
   Holding,
+  IndustryAllocationItem,
   LiabilitySummary,
   NetAssetSummary,
   PortfolioSummary,
@@ -67,7 +68,9 @@ export const calculatePortfolioSummary = (
 const ETF_SYMBOLS = new Set(["0050", "00878", "00919", "00713"]);
 
 const getHoldingAssetBucket = (holding: Holding) => {
-  if (holding.symbol.toUpperCase().includes("B")) return "bond_etf" as const;
+  // TODO: Split bond ETF into its own bucket after bond_etf is fully supported
+  // across holdings, market data, and valuation flows.
+  if (holding.symbol.toUpperCase().includes("B")) return "etf" as const;
   if (ETF_SYMBOLS.has(holding.symbol.toUpperCase())) return "etf" as const;
   return "stock" as const;
 };
@@ -151,7 +154,7 @@ export const calculateAssetAllocation = (
       acc[bucket] += amount;
       return acc;
     },
-    { stock: 0, etf: 0, bond_etf: 0 },
+    { stock: 0, etf: 0 },
   );
 
   const cashAmount = accounts
@@ -161,12 +164,7 @@ export const calculateAssetAllocation = (
     .filter((account) => account.type !== "cash")
     .reduce((sum, account) => sum + account.balance, 0);
 
-  const totalAssets =
-    stockBuckets.stock +
-    stockBuckets.etf +
-    stockBuckets.bond_etf +
-    cashAmount +
-    financialAccountAmount;
+  const totalAssets = stockBuckets.stock + stockBuckets.etf + cashAmount + financialAccountAmount;
   const safeTotal = totalAssets === 0 ? 1 : totalAssets;
 
   return [
@@ -177,12 +175,6 @@ export const calculateAssetAllocation = (
       ratio: stockBuckets.stock / safeTotal,
     },
     { key: "etf", label: "ETF", amount: stockBuckets.etf, ratio: stockBuckets.etf / safeTotal },
-    {
-      key: "bond_etf",
-      label: "債券 ETF",
-      amount: stockBuckets.bond_etf,
-      ratio: stockBuckets.bond_etf / safeTotal,
-    },
     { key: "cash", label: "現金", amount: cashAmount, ratio: cashAmount / safeTotal },
     {
       key: "financial_account",
@@ -191,4 +183,22 @@ export const calculateAssetAllocation = (
       ratio: financialAccountAmount / safeTotal,
     },
   ];
+};
+
+export const calculateIndustryAllocation = (holdings: Holding[]): IndustryAllocationItem[] => {
+  const totalStockValue = calculateTotalStockValue(holdings);
+  const safeTotal = totalStockValue === 0 ? 1 : totalStockValue;
+  const grouped = holdings.reduce<Record<string, number>>((acc, holding) => {
+    const industry = holding.sector?.trim() || "其他";
+    acc[industry] = (acc[industry] ?? 0) + calculateHoldingMarketValue(holding);
+    return acc;
+  }, {});
+
+  return Object.entries(grouped)
+    .map(([industry, amount]) => ({
+      industry,
+      amount,
+      ratio: amount / safeTotal,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 };

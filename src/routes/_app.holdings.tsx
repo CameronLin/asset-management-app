@@ -17,6 +17,8 @@ import { getTaiwanStockColor } from "@/lib/stockColor";
 import { getHoldings, saveHoldings } from "@/lib/storage";
 import type { Holding } from "@/lib/types";
 
+const INDUSTRY_OPTIONS = ["半導體", "金融", "航運", "電子", "傳產", "ETF", "其他"] as const;
+
 export const Route = createFileRoute("/_app/holdings")({
   head: () => ({ meta: [{ title: "持股管理" }] }),
   component: HoldingsRoute,
@@ -399,6 +401,7 @@ function HoldingForm({
   const [form, setForm] = useState({
     stockSymbol: initial?.symbol ?? "",
     stockName: initial?.name ?? "",
+    sector: initial?.sector ?? "其他",
     shares: initial ? String(initial.shares) : "",
     avgCost: initial ? String(initial.avgCost) : "",
     currentPrice: initial ? String(initial.price) : "",
@@ -418,6 +421,7 @@ function HoldingForm({
   const handleSubmit = async () => {
     const stockSymbol = normalizeTaiwanStockSymbol(form.stockSymbol);
     const stockName = form.stockName.trim();
+    const sector = form.sector.trim() || "其他";
     const sharesInput = form.shares.trim();
     const avgCostInput = form.avgCost.trim();
 
@@ -477,7 +481,7 @@ function HoldingForm({
         avgCost,
         price: fallbackPrice,
         prevClose: initial?.prevClose ?? fallbackPrice,
-        sector: initial?.sector ?? "未分類",
+        sector,
         latestPriceDate: initial?.latestPriceDate ?? null,
         dataSource: initial?.dataSource ?? "Manual",
         priceStatus: initial?.priceStatus ?? "manual",
@@ -523,6 +527,22 @@ function HoldingForm({
                 className="w-full rounded-xl bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
                 placeholder="例：台積電"
               />
+            </Field>
+            <Field label="產業類別">
+              <select
+                value={form.sector}
+                onChange={(e) => {
+                  setForm({ ...form, sector: e.target.value });
+                  setError(null);
+                }}
+                className="w-full rounded-xl bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+              >
+                {INDUSTRY_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="持有股數">

@@ -26,6 +26,7 @@ import {
   calculateAssetAllocation,
   calculateHoldingProfitLoss,
   calculateHoldingReturnRate,
+  calculateIndustryAllocation,
   calculateLiabilitySummary,
   calculateNetAssetSummary,
   calculatePortfolioSummary,
@@ -56,6 +57,7 @@ function Overview() {
   );
   const liabilitySummary = calculateLiabilitySummary(creditCardTransactions, installmentPlans);
   const assetAllocation = calculateAssetAllocation(accounts, holdings);
+  const industryAllocation = calculateIndustryAllocation(holdings);
   const todayPct =
     t.stockValue - t.todayPnL === 0 ? 0 : (t.todayPnL / (t.stockValue - t.todayPnL)) * 100;
   const totalPct = t.cost === 0 ? 0 : (t.totalPnL / t.cost) * 100;
@@ -272,6 +274,26 @@ function Overview() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-base font-semibold">產業配置</h2>
+          <span className="text-xs text-muted-foreground">依股票總市值比例</span>
+        </div>
+        <div className="rounded-2xl bg-surface p-4">
+          <div className="space-y-4">
+            {industryAllocation.map((item) => (
+              <IndustryRow
+                key={item.industry}
+                label={item.industry}
+                amount={item.amount}
+                ratio={item.ratio}
+                hidden={hide}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-base font-semibold">負債摘要</h2>
           <span className="text-xs text-muted-foreground">本月應繳與剩餘負債</span>
         </div>
@@ -390,6 +412,40 @@ function AllocationRow({
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
         <div
           className="h-full rounded-full bg-primary"
+          style={{ width: `${Math.max(ratio * 100, amount > 0 ? 4 : 0)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function IndustryRow({
+  label,
+  amount,
+  ratio,
+  hidden,
+}: {
+  label: string;
+  amount: number;
+  ratio: number;
+  hidden: boolean;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          <p className="mt-1 font-mono text-xs tabular text-muted-foreground">
+            {hidden ? "NT$ ••••••" : formatTWD(amount)}
+          </p>
+        </div>
+        <p className="font-mono text-sm font-semibold tabular text-foreground">
+          {(ratio * 100).toFixed(1)}%
+        </p>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
+        <div
+          className="h-full rounded-full bg-warning"
           style={{ width: `${Math.max(ratio * 100, amount > 0 ? 4 : 0)}%` }}
         />
       </div>

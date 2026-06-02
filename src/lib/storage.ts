@@ -36,6 +36,7 @@ const normalizeHolding = (holding: Holding): Holding => {
     symbol: normalizedSymbol || holding.symbol,
     price: normalizedPrice,
     prevClose: normalizedPrevClose,
+    sector: holding.sector?.trim() || "其他",
     latestPriceDate: holding.latestPriceDate ?? null,
     dataSource: holding.dataSource ?? null,
     priceStatus: holding.priceStatus ?? "manual",

@@ -92,6 +92,12 @@ export type AssetAllocationItem = {
   ratio: number;
 };
 
+export type IndustryAllocationItem = {
+  industry: string;
+  amount: number;
+  ratio: number;
+};
+
 export type LiabilitySummary = {
   creditCardOutstanding: number;
   installmentRemaining: number;
