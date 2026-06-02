@@ -12,8 +12,10 @@ import {
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { accounts as initialAccounts, formatTWD } from "@/lib/mock-data";
 import { getAccounts, saveAccounts } from "@/lib/storage";
@@ -25,6 +27,7 @@ import {
   saveCreditCardTransactions,
   saveInstallmentPlans,
 } from "@/lib/creditCardStorage";
+import { getFutureInstallmentBills } from "@/lib/installmentCalculations";
 import type { Account, AccountType } from "@/lib/types";
 import type {
   CreditCard,
@@ -87,6 +90,10 @@ function AccountsPage() {
   const nextMonthInstallmentDue = getInstallmentDueTotal(installmentPlans, 1);
   const selectedInstallmentPlan =
     installmentPlans.find((plan) => plan.id === selectedInstallmentPlanId) ?? null;
+  const futureInstallmentBills = useMemo(
+    () => getFutureInstallmentBills(installmentPlans),
+    [installmentPlans],
+  );
 
   const groupedAccounts = ACCOUNT_TYPES.map((type) => ({
     type,
@@ -506,6 +513,10 @@ function AccountsPage() {
             <MiniStat label="分期方案數量" value={`${installmentPlans.length} 筆`} />
           </div>
 
+          {!selectedInstallmentPlan && (
+            <FutureInstallmentBillsSection months={futureInstallmentBills} />
+          )}
+
           {installmentPlans.length === 0 ? (
             <EmptyState
               title="尚未新增分期項目"
@@ -725,6 +736,112 @@ function InstallmentPlanDetail({
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+function FutureInstallmentBillsSection({
+  months,
+}: {
+  months: ReturnType<typeof getFutureInstallmentBills>;
+}) {
+  const defaultExpanded = useMemo(
+    () => months.slice(0, 3).map((month) => month.monthKey),
+    [months],
+  );
+  const [expandedMonths, setExpandedMonths] = useState<string[]>(defaultExpanded);
+
+  useEffect(() => {
+    setExpandedMonths(defaultExpanded);
+  }, [defaultExpanded]);
+
+  const toggleMonth = (monthKey: string) => {
+    setExpandedMonths((prev) =>
+      prev.includes(monthKey) ? prev.filter((item) => item !== monthKey) : [...prev, monthKey],
+    );
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="rounded-2xl bg-surface p-4">
+        <h3 className="font-display text-base font-semibold">未來分期帳單</h3>
+        <p className="mt-1 text-xs text-muted-foreground">檢視接下來每個月的分期應繳金額</p>
+      </div>
+
+      {months.length === 0 ? (
+        <div className="rounded-2xl bg-surface p-5 text-center text-sm text-muted-foreground">
+          目前沒有待繳分期
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {months.map((month) => {
+            const expanded = expandedMonths.includes(month.monthKey);
+
+            return (
+              <div key={month.monthKey} className="rounded-2xl bg-surface p-4">
+                <button
+                  type="button"
+                  onClick={() => toggleMonth(month.monthKey)}
+                  className="flex w-full items-start justify-between gap-3 text-left"
+                >
+                  <div>
+                    <p className="text-sm font-semibold">{month.label}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {month.items.length} 筆待繳 · 合計 {formatTWD(month.totalAmount)}
+                    </p>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="font-mono text-sm font-semibold tabular text-primary">
+                      {formatTWD(month.totalAmount)}
+                    </span>
+                    {expanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </button>
+
+                {expanded ? (
+                  <div className="mt-4 space-y-2 border-t border-border pt-3">
+                    {month.items.map((item) => (
+                      <div
+                        key={`${item.planId}-${item.installmentNumber}`}
+                        className="rounded-xl bg-background/60 px-3 py-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium">{item.planName}</p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              第 {item.installmentNumber} / {item.installmentMonths} 期 · 到期日{" "}
+                              {item.dueDate}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-mono text-sm font-semibold tabular">
+                              {formatTWD(item.amount)}
+                            </p>
+                            <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-warning">
+                              未繳
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-3">
+                      <p className="text-sm font-medium">本月合計</p>
+                      <p className="font-mono text-sm font-semibold tabular text-primary">
+                        {formatTWD(month.totalAmount)}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
