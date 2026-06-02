@@ -63,6 +63,13 @@ export type StockQuote = {
   updatedAt: string;
 };
 
+export type WatchlistItem = {
+  id: string;
+  symbol: string;
+  name: string;
+  createdAt: string;
+};
+
 export type PortfolioSummary = {
   total: number;
   stockValue: number;
