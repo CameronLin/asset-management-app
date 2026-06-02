@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Briefcase, Wallet, Newspaper, LineChart } from "lucide-react";
+import { Home, Briefcase, Wallet, ReceiptText, LineChart } from "lucide-react";
 
 const items = [
   { to: "/", label: "總覽", icon: Home },
   { to: "/holdings", label: "持股", icon: Briefcase },
   { to: "/accounts", label: "帳戶", icon: Wallet },
-  { to: "/strategy", label: "新聞", icon: Newspaper },
+  { to: "/strategy", label: "紀錄", icon: ReceiptText },
   { to: "/market", label: "行情", icon: LineChart },
 ] as const;
 
